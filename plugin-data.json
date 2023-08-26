@@ -1,5 +1,5 @@
 {
-	"plugin_id": "sample-plugin",
+	"plugin_id": "myplugin",
 	"plugin_files": [
 		"main.js",
 		"styles.css",
