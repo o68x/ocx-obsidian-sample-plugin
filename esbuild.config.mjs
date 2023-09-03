@@ -1,9 +1,11 @@
 import builtins from "builtin-modules";
 import { copyFile } from "fs/promises";
 import esbuild from "esbuild";
+import esbuildSvelte from "esbuild-svelte";
 import path from "path";
 import process from "process";
 import { readFileSync } from "fs";
+import sveltePreprocess from "svelte-preprocess";
 
 const banner =
 `/*
@@ -38,7 +40,7 @@ const context = await esbuild.context({
 	banner: {
 		js: banner,
 	},
-	entryPoints: ["main.ts"],
+	entryPoints: ["src/main.ts"],
 	bundle: true,
 	external: [
 		"obsidian",
@@ -61,6 +63,17 @@ const context = await esbuild.context({
 	sourcemap: prod ? false : "inline",
 	treeShaking: true,
 	plugins: [
+		esbuildSvelte({
+			compilerOptions: {
+				css: "injected",
+				dev: !prod
+			},
+			filterWarnings: (warning) => {
+				if (warning.code.startsWith("a11y-")) return false;
+				return true;
+			},
+			preprocess: sveltePreprocess()
+		}),
 		copyFilesToDestination
 	],
 	outfile: "main.js",
@@ -70,8 +83,8 @@ let dest = path.join(dev_root, plugin_id);
 
 if (prod) {
 	dest = path.join(prod_root, plugin_id);
-	await context.rebuild();
+	await context.rebuild().catch(() => process.exit(1));
 	process.exit(0);
 } else {
-	await context.watch();
+	await context.watch().catch(() => process.exit(1));
 }
